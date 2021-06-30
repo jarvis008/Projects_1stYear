@@ -1,0 +1,114 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+training_matrix = np.array(
+    [[0, 0, 0, 0], [0, 1, 1, 0], [1, 0, 1, 0], [1, 1, 0, 0], [0, 0, 1, 1], [0, 1, 0, 1], [1, 0, 0, 1], [1, 1, 1, 1]],
+    dtype=float)#training data matrix with each row as:(x1,x2,Y,x3);Here the Y(true result matrix has been included along with input data but will be processed separately using training_data function(bias will also be added in training data function))
+alpha = 0.5
+iter = 10000
+
+#accepting user input x1,x2,x3 after training which will act as test input data
+def input_parameters():
+    x1 = int(input('x1='))
+    x2 = int(input('x2='))
+    x3 = int(input('x3='))
+    X = np.array(([1], [x1], [x2], [x3]), dtype=float)
+    return X
+
+#good old sigmoid function
+#while returning the matrix, a 1(to facilitate bias in a given layer) is added to the vector
+def sigmoid(W, a):
+    z = np.dot(W, a)
+    (x, y) = z.shape
+    U = np.ones((x, y), dtype=float)
+    z1 = np.exp(-z)
+    z2 = 1 / (U + z1)
+    z2 = np.append([1], z2)
+    z2 = z2.reshape((x + 1), 1)
+    return z2
+
+#same good old sigmoid function
+#this function is used in the activation of output layer, so we don't need to return a vector with added bias, the only difference between this and previous function is that it does not return vector with added bias(1)
+def final_sigmoid(W, a):
+    z = np.dot(W, a)
+    (x, y) = z.shape
+    U = np.ones((x, y), dtype=float)
+    z1 = np.exp(-z)
+    z2 = 1 / (U + z1)
+    return z2
+
+#function takes in the shape(x,y) and generates array elements in the range -epsilon<array element<epsilon(as told in andrew ng course of ML)
+def initialize_array(x, y, epsilon):
+    R = np.random.random([x, y])
+    E = np.full((x, y), epsilon)
+    M = ((2 * R) - np.ones((x, y), dtype=float)) * E
+    return M
+
+#returns the training data to be further processed in the neural network(adds the bias(1) and returns input vector, and separately returns the Y(actual result) vector)
+def training_data(i):
+    X = np.array(([1], [training_matrix[i, 0]], [training_matrix[i, 1]], [training_matrix[i, 3]]), dtype=float)
+    Y = np.array([training_matrix[i, 2]])
+    return X, Y
+
+#cost function
+def cost_func(a3, y):
+    J = -1 * (y * np.log(a3) + (1 - y) * np.log(1 - a3))
+    return J[0]
+
+#initializing weight matrices for layers 1>2 and 2>3(neural network of 3 layers with 1 input(3 nodes+1 bias), 1 output(1 node), and 1 hidden layer(4 nodes+1 bias))
+W12 = initialize_array(4, 4, 1)#input layer nodes not connected to hidden(next)layer bias(as the weights for that would be 0 only)
+W23 = initialize_array(1, 5, 1)#hidden layer nodes(including bias) connected to output layer
+costs = []
+for j in range(iter):
+    c = 0
+    dyt = 0
+    delta2 = np.zeros((1, 5), dtype=float)
+    delta1 = np.zeros((4, 4), dtype=float)
+    for i in range(8):
+        #forward propagation
+        a1, Y = training_data(i)
+        a2 = sigmoid(W12, a1)
+        a3 = final_sigmoid(W23, a2)
+       #ends
+        # print("calculated:", a3)
+        c += cost_func(a3, Y)
+        dy = a3 - Y
+        dyt += dy
+        d2 = np.dot(dy, np.transpose(a2))
+        # print('W23=\n', W23)
+        # print('error in W23=\n', d2)
+        x, y = a2.shape
+        #backward propagation
+        del2 = (np.dot(np.transpose(W23), dy)) * (a2 * ((np.ones((x, y), dtype=float)) - a2))
+        d1 = np.dot(del2, np.transpose(a1))
+        d1 = d1[1:, :]
+        delta1 += d1
+        delta2 += d2
+        #ends
+
+    W12 = W12 - 0.125 * alpha * delta1#updating
+    W23 = W23 - 0.125 * alpha * delta2#updating
+    cost = 0.125 * c
+    costs.append(cost)
+    if j % 2000 == 0:
+        print('cost = ', cost)
+        print('dy=', dyt)
+
+plt.plot(costs)
+plt.show()
+
+print("neural network trained")
+x = 1
+while x == 1:
+    a1 = input_parameters()
+    # a1 = training_data(c)
+    a2 = sigmoid(W12, a1)
+    a3 = final_sigmoid(W23, a2)
+    print("final output of neural net:", a3)
+    if a3 >= 0.5:
+        print("final output =", 1)
+    elif a3 < 0.5:
+        print("final output =", 0)
+    x = int(input('press 1 to continue, 0 to terminate'))
+
+print("bye")
